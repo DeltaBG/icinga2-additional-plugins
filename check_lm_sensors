@@ -25,9 +25,46 @@ use Getopt::Long;
 use Carp;
 use English qw(-no_match_vars);
 
-use Monitoring::Plugin;
+my $plugin_module = load_module( 'Monitoring::Plugin', 'Nagios::Plugin' );
 
-use version; our $VERSION = '3.1.1';
+# Check which version of the monitoring plugins is available
+
+sub load_module {
+
+    my @names = @_;
+    my $loaded_module;
+
+    for my $name (@names) {
+
+        my $file = $name;
+
+        # requires need either a bare word or a file name
+        $file =~ s{::}{/}gsxm;
+        $file .= '.pm';
+
+        eval {    ## no critic (ErrorHandling::RequireCheckingReturnValueOfEval)
+            require $file;
+            $name->import();
+        };
+        if ( !$EVAL_ERROR ) {
+            $loaded_module = $name;
+            last;
+        }
+    }
+
+    if ( !$loaded_module ) {
+        #<<<
+        print 'CHECK_UPDATES: plugin not found: ' . join( ', ', @names ) . "\n";  ## no critic (RequireCheckedSyscall)
+        #>>>
+
+        exit 2;
+    }
+
+    return $loaded_module;
+
+}
+
+use version; our $VERSION = '3.1.2';
 
 # IMPORTANT: Nagios plugins could be executed using embedded perl in this case
 #            the main routine would be executed as a subroutine and all the
@@ -73,7 +110,7 @@ $desc      = q{};
 $drives    = 1;
 $help      = q{};
 $prog_name = 'LM_SENSORS';
-$plugin    = Monitoring::Plugin->new( shortname => $prog_name );
+$plugin    = $plugin_module->new( shortname => $prog_name );
 $sensors   = 1;
 $space     = q{};
 $status    = q{};
