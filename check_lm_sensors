@@ -443,7 +443,7 @@ sub parse_sensors {
                 $sensor_values{$name} = $value;
 
                 if ( $verbosity || $list ) {
-                    print "found sensor $name ($value)\n";
+                    print "sensor:$name:$value\n";
                 }
 
             }
